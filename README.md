@@ -1,2 +1,2 @@
 # calculator
-Basic calculator for a college assignment
+Basic string-input calculator for a college assignment
