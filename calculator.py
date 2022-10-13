@@ -141,7 +141,7 @@ def shunt(exp):
                 #no stack means no real input
                 if not ops_stk:
                     print('~Functions require input')
-                    break;
+                    return;
                 num = get_num_type(ops_stk.pop())
                 print("evaluating: ", end='')
                 print(op)
@@ -177,11 +177,11 @@ def shunt(exp):
         print('~Invalid Input')
         return
     answer = ops_stk[-1]
-    print("\n= ", end='')  
+    print("\n= ", end='') 
     if isinstance(answer, float):
         print("%.14f" % round(ops_stk[-1], 14))
     else:
-        print(answer)
+        print(int(answer))
         
     
 def validate(exp):
@@ -249,7 +249,7 @@ def validate(exp):
             #(unary minus is given parenthesis to cover a number since it is treated as a func like "sin()")
             if i == 0: 
                 new_exp.append('u')
-                if chars[i+1] != '(':
+                if not_end and chars[i+1] != '(':
                     new_exp.append('(')
                     negate = True
             # there is another minus, then convert to binary plus
@@ -268,7 +268,7 @@ def validate(exp):
             else: new_exp.append(chars[i])
         # if an operation check if there is another operation ahead (ignores minus since it could be unary)
         elif chars[i] in ops:
-            if(chars[i+1] in ops and chars[i+1] != '-'): return '~Invalid use of operators'
+            if i != length-1 and chars[i+1] in ops and chars[i+1] != '-': return '~Invalid use of operators'
             new_exp.append(chars[i])
         # if a paren keep count
         elif chars[i] in strt_paren: 
