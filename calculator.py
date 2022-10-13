@@ -6,7 +6,6 @@ instructor/TA for all program components included here!
 
 #For exiting cleanly
 import sys
-
 #For sin, log, etc. functions
 import math
 
@@ -58,18 +57,12 @@ attributes = {
     '-' : (1, -1)
 }
 
-srt_paren = ['(', '{']
+strt_paren = ['(', '{']
 end_paren = [')', '}']
 
-# If char is valid operator
-def is_op(char):
-    return char == '+' or char == '-'  or char == '*' \
-    or char == "/" or char == '^'   
-
-# if char is a valid function
-def is_func(char):
-    return char == 'u' or char == 's'  or char == 't' \
-    or char == "c" or char == 'o' or char == 'l' or char == 'e'
+# valid operators & functions
+ops = ['+','-','*','/','^']
+fcs = ['u', 's', 't', 'c', 'o', 'l', 'e'] 
     
 #returns true if the char can be converted into an int or float, otherwise return false
 def is_num(char):
@@ -84,13 +77,15 @@ def is_num(char):
             return False
 
 # returns number as a float or int using isinstance()
+# assumes input is for a float or int
 def get_num_type(num):
     if isinstance(num, int):
         return int(num)
     else:
         return float(num)
-   
-# Shunting Yard Algorithm to convert equation into Reverse Polish Notation
+  
+
+# Shunting Yard Algorithm to convert equation into postfix
 def shunt(exp):
     ops_stk = [];
     output_que = [];
@@ -99,52 +94,54 @@ def shunt(exp):
         if is_num(x):
             output_que.append(x)
         # if a function, push to stack
-        if is_func(x):
+        if x in fcs:
             ops_stk.append(x)
         # If an operator
-        elif is_op(x):
-            # while the operator on top is not a left paren,
+        elif x in ops:
+            # while the val on top is an operator,
             # AND has greater precedence OR same precedence and cur op is left-associative
-            for i, o in reversed(list(enumerate(ops_stk))):
-                if not is_op(o): break;
-                if(attributes[o][0] > attributes[x][0] or \
-                      (attributes[o][0] == attributes[x][0] and attributes[x][1] == -1)): 
+            try:
+                while ops_stk and ops_stk[-1] in ops and attributes[ops_stk[-1]][0] > attributes[x][0] or \
+                          (attributes[ops_stk[-1]][0] == attributes[x][0] and attributes[x][1] == -1):
                     #pop from stack onto queue
-                    output_que.append(ops_stk.pop(i))
-                else: break;
+                    output_que.append(ops_stk.pop())
+            except Exception: pass #catching exception means stack val wasn't an op, so do nothing
             # push current op to stack
             ops_stk.append(x)
         # if left paren, push to stack
-        elif x == '(' or x == '{':
+        elif x in strt_paren:
             ops_stk.append(x)
         # if right paren
-        elif x == ')' or x == '}':
+        elif x in end_paren:
             # while the top of the stack isn't a left paren
-            for i, o in reversed(list(enumerate(ops_stk))):
-                if not o in srt_paren:
-                    #pop ops from stack onto queue
-                    output_que.append(ops_stk.pop(i))
-                else:
-                    #pop and discard left paren
-                    ops_stk.pop(i)
-                    break;
+            while ops_stk and (not ops_stk[-1] in strt_paren):
+                #pop ops from stack onto queue
+                output_que.append(ops_stk.pop())
+                
+            #discard left paren    
+            ops_stk.pop()
+
             #if the top of the op stack is a func
-            if ops_stk and is_func(ops_stk[-1]):
+            if ops_stk and ops_stk[-1] in fcs:
                 #pop func to queue
                 output_que.append(ops_stk.pop())
                 
     #while there are ops on stack, pop to queue
-    for o in ops_stk:
-        output_que.append(ops_stk.pop())
+    while ops_stk:
+        output_que.extend(ops_stk.pop())
           
     print(output_que)
     
-    """ TODO: catch overflow exception """
-    # evaluates reverse polish notation
+    # evaluates postfix notation
     for op in output_que:
+        try:
             if is_num(op):
                 ops_stk.append(op)
-            elif is_func(op):
+            elif op in fcs:
+                #no stack means no real input
+                if not ops_stk:
+                    print('~Functions require input')
+                    break;
                 num = get_num_type(ops_stk.pop())
                 print("evaluating: ", end='')
                 print(op)
@@ -153,6 +150,9 @@ def shunt(exp):
                 print(operations[op](num))
                 ops_stk.append(operations[op](num))
             else:
+                # Ignores unary positives
+                if not ops_stk or len(ops_stk) == 1: 
+                    continue
                 num2 = get_num_type(ops_stk.pop())
                 num1 = get_num_type(ops_stk.pop())  
                 
@@ -164,14 +164,24 @@ def shunt(exp):
                 #Check for divide by zero
                 if(num2 == 0 and op == '/'):
                     print("~Cannot divide by zero")
-                    return;
+                    return
                 
                 print(operations[op](num1, num2))
                 
                 ops_stk.append(operations[op](num1, num2))
-       
+        except OverflowError: 
+            print('~Result is too big to compute')
+            return
+        
+    if not ops_stk:
+        print('~Invalid Input')
+        return
+    answer = ops_stk[-1]
     print("\n= ", end='')  
-    print(ops_stk[-1])
+    if isinstance(answer, float):
+        print("%.14f" % round(ops_stk[-1], 14))
+    else:
+        print(answer)
         
     
 def validate(exp):
@@ -181,6 +191,7 @@ def validate(exp):
     new_exp = []
     i = 0;
     start = 0;
+    negate = False
     
     left_paren = 0
     right_paren = 0
@@ -191,15 +202,23 @@ def validate(exp):
             start = i
             while i < length and (chars[i].isdigit() or chars[i] == '.'):
                 i += 1
+                
             #check for invalid decimal value
             num = chars[start:i]
             dec = 0
             for c in num:
                 if c == '.': dec += 1
+                if dec > 1: return '~Invalid decimal number'
             
-            if dec > 1: return '~Invalid decimal number'
+            #remove leading zeros
+            num = (''.join(num)).lstrip('0')
+            # An empty string means there were only zeros
+            if not num: num = 0
             
-            new_exp.append(''.join(num))
+            new_exp.append(num)
+            if negate:
+                negate = False
+                new_exp.append(')')
             i -= 1
         # if char is a potential beginning of sin, cot, etc, then check if the rest of the func is there
         # otherwise an invalid function is present
@@ -216,7 +235,7 @@ def validate(exp):
             elif func == 'cot': func_to_token = 'o'
             elif func == 'log': func_to_token = 'l'
             elif nat == 'ln': func_to_token = 'e'
-            else: return ''
+            else: return '~Invalid Input'
                 
             new_exp.append(func_to_token)
             
@@ -225,24 +244,34 @@ def validate(exp):
             else: i += 2
         # Converting a minus if:
         elif chars[i] == '-':
-            # at the start of the expression, then it is unary
-            if i == 0: new_exp.append('u')
-            # the previous key is an operator or starting paren, then it is unary
-            elif is_op(chars[i-1]) or chars[i-1] in srt_paren: new_exp.append('u')
+            not_end = i != length-1 #prevents calls of i+1 when that would be out of bounds
+            # at the start of the expression, then it is unary 
+            #(unary minus is given parenthesis to cover a number since it is treated as a func like "sin()")
+            if i == 0: 
+                new_exp.append('u')
+                if chars[i+1] != '(':
+                    new_exp.append('(')
+                    negate = True
             # there is another minus, then convert to binary plus
-            elif chars[i+1] == '-':
+            elif not_end and chars[i+1] == '-':
                 i += 1
                 new_exp.append('+')
+            # the previous key is an operator or starting paren, then it is unary
+            elif not_end and chars[i-1] in ops or chars[i-1] in strt_paren: 
+                new_exp.append('u')
+                if chars[i+1] != '(':
+                    new_exp.append('(')
+                    negate = True
             # if the next key isn't a left paren or a digit, then something is wrong
-            elif not chars[i+1] in srt_paren and not chars[i+1].isdigit(): return '~Invalid use of operations'
+            elif not_end and not chars[i+1] in strt_paren and not chars[i+1].isdigit(): return '~Invalid use of operations'
             # otherwise it is binary minus
             else: new_exp.append(chars[i])
-        # if an operation check if there is another operation ahead
-        elif is_op(chars[i]):
-            if(is_op(chars[i+1]) and chars[i+1] != '-'): return '~Invalid use of operators'
+        # if an operation check if there is another operation ahead (ignores minus since it could be unary)
+        elif chars[i] in ops:
+            if(chars[i+1] in ops and chars[i+1] != '-'): return '~Invalid use of operators'
             new_exp.append(chars[i])
         # if a paren keep count
-        elif chars[i] in srt_paren: 
+        elif chars[i] in strt_paren: 
             left_paren += 1
             new_exp.append(chars[i])
         elif chars[i] in end_paren: 
@@ -255,6 +284,7 @@ def validate(exp):
         i += 1
       
     if right_paren != left_paren: return '~Mismatching parenthesis'
+    if left_paren + right_paren == length: return '~Input requires numbers'
     
     print("validated exp: ", end="")
     print(new_exp)
@@ -281,6 +311,7 @@ if __name__ == '__main__':
             sys.exit(0)
         else:
             validated = validate(expression)
+            #Use ~ in errors to catch and print
             if '~' in validated: print(validated)
             else: shunt(validated)
     
