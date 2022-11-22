@@ -147,6 +147,10 @@ def shunt(exp):
                 print(op)
                 print('with number: ', end='')
                 print(num)
+                
+                if(num < 0 and (op == 'e' or op == 'l')):
+                    return '~The argument of a log function cannot be negative'
+                
                 print(operations[op](num))
                 ops_stk.append(operations[op](num))
             else:
@@ -262,8 +266,9 @@ def validate(exp):
                 if chars[i+1] != '(':
                     new_exp.append('(')
                     negate = True
-            # if the next key isn't a left paren or a digit, then something is wrong
-            elif not_end and not chars[i+1] in strt_paren and not chars[i+1].isdigit(): return '~Invalid use of operations'
+            # if the next key isn't a left paren, function, or a digit, then something is wrong
+            elif not_end and not chars[i+1] in strt_paren and not chars[i+1].isdigit() and not chars[i+1] in fcs: 
+                return '~Invalid use of operations'
             # otherwise it is binary minus
             else: new_exp.append(chars[i])
         # if an operation check if there is another operation ahead (ignores minus since it could be unary)
