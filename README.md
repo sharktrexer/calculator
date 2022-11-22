@@ -8,4 +8,4 @@ Only the calculator.py needs to be downloaded. Once downloaded, open a command p
 Each step of the evaluation is printed
 
 Known Bugs:
-- an equation that negates a function being applied to an expression will be incorrectly evaluated i.e., "-sin(8+4)" will be evaluated as "-(sin(8)+4)
+- an equation that negates a function being applied to an expression will be incorrectly evaluated i.e., "-sin(8+4)" will be evaluated as "-(sin(8)+4)"
