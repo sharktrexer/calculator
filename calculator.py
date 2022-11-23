@@ -148,8 +148,15 @@ def shunt(exp):
                 print('with number: ', end='')
                 print(num)
                 
-                if(num < 0 and (op == 'e' or op == 'l')):
-                    return '~The argument of a log function cannot be negative'
+                # log of <=0 is undefined
+                if(num <= 0 and (op == 'e' or op == 'l')):
+                    print('~The argument of a log function cannot be less than or equal to zero')
+                    return
+                
+                # divide by zero error
+                if(math.sin(num) == 0 and op == 'o'):
+                    print('~The argument of a cotangent function had a value of sin() equal to zero')
+                    return
                 
                 print(operations[op](num))
                 ops_stk.append(operations[op](num))
@@ -169,6 +176,16 @@ def shunt(exp):
                 if(num2 == 0 and op == '/'):
                     print("~Cannot divide by zero")
                     return
+                
+                #cannot calculate the exponent of a negative decimal in either place
+                if(
+                    op == '^'
+                    and (
+                    (num1 <= 0 and isinstance(num1, float))
+                    or 
+                    (num2 <= 0 and isinstance(num2, float)))
+                    ):
+                    return '~Unable to calculate the exponent with a negative decimal'
                 
                 print(operations[op](num1, num2))
                 
@@ -196,6 +213,7 @@ def validate(exp):
     i = 0;
     start = 0;
     negate = False
+
     
     left_paren = 0
     right_paren = 0
@@ -281,6 +299,10 @@ def validate(exp):
             new_exp.append(chars[i])
         elif chars[i] in end_paren: 
             right_paren += 1
+            
+            # if a start paren has never existed then adding an end paren invalidates this equation
+            if left_paren < right_paren: return '~Cannot end a parenthesis group if it was never opened'
+            
             new_exp.append(chars[i])
         # invalid token
         else: return '~Invalid input'
