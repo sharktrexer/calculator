@@ -362,7 +362,10 @@ if __name__ == '__main__':
         elif expression == "exit":
             sys.exit(0)
         elif expression == "debug":
-            print("\nDebug Mode toggled.")
+            if DEBUG_MODE:
+                print("\nDebug Mode disabled.")
+            else:
+                print("\nDebug Mode enabled.")
             DEBUG_MODE = not DEBUG_MODE
         else:
             validated = validate(expression)
