@@ -9,6 +9,9 @@ import sys
 #For sin, log, etc. functions
 import math
 
+# Determines if extra information during the equation validation and evaluation is printed
+DEBUG_MODE = False
+
 '''operation methods'''
 def add(num1, num2):
     return num1 + num2
@@ -129,8 +132,11 @@ def shunt(exp):
     #while there are ops on stack, pop to queue
     while ops_stk:
         output_que.extend(ops_stk.pop())
-          
-    print(output_que)
+    
+    
+    if DEBUG_MODE:
+        print("postfix exp:", output_que)
+    
     
     # evaluates postfix notation
     for op in output_que:
@@ -143,10 +149,12 @@ def shunt(exp):
                     print('~Functions require input')
                     return;
                 num = get_num_type(ops_stk.pop())
-                print("evaluating: ", end='')
-                print(op)
-                print('with number: ', end='')
-                print(num)
+                
+                if DEBUG_MODE:
+                    print("evaluating: ", end='')
+                    print(op)
+                    print('with number: ', end='')
+                    print(num)
                 
                 # log of <=0 is undefined
                 if(num <= 0 and (op == 'e' or op == 'l')):
@@ -158,7 +166,11 @@ def shunt(exp):
                     print('~The argument of a cotangent function had a value of sin() equal to zero')
                     return
                 
-                print(operations[op](num))
+                
+                if DEBUG_MODE:
+                    print("=", operations[op](num))
+                
+                
                 ops_stk.append(operations[op](num))
             else:
                 # Ignores unary positives
@@ -167,10 +179,13 @@ def shunt(exp):
                 num2 = get_num_type(ops_stk.pop())
                 num1 = get_num_type(ops_stk.pop())  
                 
-                print("evaluating: ", end='')
-                print(num1, end = ' ')
-                print(op,  end = ' ')
-                print(num2)
+                
+                if DEBUG_MODE:
+                    print("evaluating: ", end='')
+                    print(num1, end = ' ')
+                    print(op,  end = ' ')
+                    print(num2)
+                
                 
                 #Check for divide by zero
                 if(num2 == 0 and op == '/'):
@@ -185,9 +200,13 @@ def shunt(exp):
                     or 
                     (num2 <= 0 and isinstance(num2, float)))
                     ):
-                    return '~Unable to calculate the exponent with a negative decimal'
+                    print('~Unable to calculate the exponent with a negative decimal')
+                    return
                 
-                print(operations[op](num1, num2))
+                
+                if DEBUG_MODE:
+                    print("=", operations[op](num1, num2))
+                
                 
                 ops_stk.append(operations[op](num1, num2))
         except OverflowError: 
@@ -200,7 +219,7 @@ def shunt(exp):
     answer = ops_stk[-1]
     print("\n= ", end='') 
     if isinstance(answer, float):
-        print("%.14f" % round(ops_stk[-1], 14))
+        print(("%.14f" % round(ops_stk[-1], 14)).rstrip('0').rstrip('.'))
     else:
         print(int(answer))
         
@@ -313,13 +332,19 @@ def validate(exp):
     if right_paren != left_paren: return '~Mismatching parenthesis'
     if left_paren + right_paren == length: return '~Input requires numbers'
     
-    print("validated exp: ", end="")
-    print(new_exp)
+    
+    if DEBUG_MODE:
+        print("validated exp: ", end="")
+        print(new_exp)
+    
+    
     return new_exp
 
+#-------------------------------------------------Main-------------------------------------------------------------
 if __name__ == '__main__':
     print("What would you like to evaluate!? Enter \"help\" for possible operations and formatting, and \
-          \"exit\" to stop the calculator\n")
+          \"exit\" to stop the calculator. You may also use \"debug\" to toggle the display of the \
+          calculator's steps as it evaluates your equations.\n")
         
     # Loop
     while(True):
@@ -336,6 +361,9 @@ if __name__ == '__main__':
             print("Logarithmic Functions: \nlog(): evaluates log10, ln(): evaluates natural log")
         elif expression == "exit":
             sys.exit(0)
+        elif expression == "debug":
+            print("\nDebug Mode toggled.")
+            DEBUG_MODE = not DEBUG_MODE
         else:
             validated = validate(expression)
             #Use ~ in errors to catch and print
