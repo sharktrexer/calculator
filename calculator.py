@@ -26,7 +26,7 @@ def div(num1, num2):
     return num1 / num2
 
 def cot(num):
-    return math.cos(num) / math.sin(num)
+    return 1 / math.tan(num)
 
 def neg(num):
     return num * -1
@@ -88,7 +88,7 @@ def get_num_type(num):
         return float(num)
   
 
-# Shunting Yard Algorithm to convert equation into postfix
+# Shunting Yard Algorithm to convert equation into postfix and solves equation
 def shunt(exp):
     ops_stk = [];
     output_que = [];
@@ -146,8 +146,8 @@ def shunt(exp):
             elif op in fcs:
                 #no stack means no real input
                 if not ops_stk:
-                    print('~Functions require input')
-                    return;
+                    return '~Functions require input'
+                
                 num = get_num_type(ops_stk.pop())
                 
                 if DEBUG_MODE:
@@ -158,13 +158,12 @@ def shunt(exp):
                 
                 # log of <=0 is undefined
                 if(num <= 0 and (op == 'e' or op == 'l')):
-                    print('~The argument of a log function cannot be less than or equal to zero')
-                    return
+                    return '~The argument of a log function cannot be less than or equal to zero'
+                    
                 
                 # divide by zero error
-                if(math.sin(num) == 0 and op == 'o'):
-                    print('~The argument of a cotangent function had a value of sin() equal to zero')
-                    return
+                if(math.tan(num) == 0 and op == 'o'):
+                    return '~The argument of a cotangent function had a value of tan() equal to zero'
                 
                 
                 if DEBUG_MODE:
@@ -189,8 +188,8 @@ def shunt(exp):
                 
                 #Check for divide by zero
                 if(num2 == 0 and op == '/'):
-                    print("~Cannot divide by zero")
-                    return
+                    return "~Cannot divide by zero"
+                    
                 
                 #cannot calculate the exponent of a negative decimal in either place
                 if(
@@ -200,8 +199,7 @@ def shunt(exp):
                     or 
                     (num2 <= 0 and isinstance(num2, float)))
                     ):
-                    print('~Unable to calculate the exponent with a negative decimal')
-                    return
+                    return '~Unable to calculate the exponent with a negative decimal'
                 
                 
                 if DEBUG_MODE:
@@ -210,19 +208,33 @@ def shunt(exp):
                 
                 ops_stk.append(operations[op](num1, num2))
         except OverflowError: 
-            print('~Result is too big to compute')
-            return
+            return '~Result is too big to compute'
+        
         
     if not ops_stk:
-        print('~Invalid Input')
-        return
+        return '~Invalid Input'
+    
+    
+    return get_num_type(ops_stk[-1])
+
+    '''
     answer = ops_stk[-1]
     print("\n= ", end='') 
     if isinstance(answer, float):
         print(("%.14f" % round(ops_stk[-1], 14)).rstrip('0').rstrip('.'))
     else:
         print(int(answer))
-        
+     '''   
+
+# Prints answer with an equal sign and keeps decimals clean of trialing zeros and a max of 14 places
+def print_answer(answer):
+    
+    print("\n= ", end='') 
+    if isinstance(answer, float):
+        print(("%.14f" % round(answer, 14)).rstrip('0').rstrip('.'))
+    else:
+        print(int(answer))
+    
     
 def validate(exp):
     #get exp string into an array of chars for easy iteration
@@ -350,7 +362,7 @@ if __name__ == '__main__':
     while(True):
         expression = input("Input: ")
         
-        #Get clean input with no white space
+        # Get clean input with no white space
         expression = ''.join(expression.split())
         if expression == "help":
             print("\nWhen entering expressions, don't worry about excess spaces.")
@@ -369,8 +381,25 @@ if __name__ == '__main__':
             DEBUG_MODE = not DEBUG_MODE
         else:
             validated = validate(expression)
-            #Use ~ in errors to catch and print
-            if '~' in validated: print(validated)
-            else: shunt(validated)
+            # ~ is included in the returned string to specificy the an error occured
+            if '~' not in validated: 
+                result = shunt(validated)
+                if not isinstance(result, str): # since any string returned is an error, assume a number otherwise
+                    print_answer(result)
+                else:
+                    print(result)
+            else:  
+                print(validated)
+
+# if a program wants to run this calc externally, use this
+def Run_Calc(expression):
+    # Clean input
+    expression = ''.join(expression.split())
     
-    
+    # Returns
+    validated = validate(expression)
+    # Don't shunt if there's an error
+    if '~' not in validated: 
+        return shunt(validated)
+    else:  
+        return validated
